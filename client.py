@@ -3,11 +3,10 @@ import re
 from dotenv import load_dotenv
 import discord
 
-import lib.my_error as err
+from lib.my_error import MakerFailed, ParserFailed, SystemWarn
 from lib.maker import Maker
 from lib.parser import SubCommandParser
 import message as msg
-# import error_message as err_msg
 
 
 load_dotenv(verbose=True)
@@ -49,19 +48,29 @@ async def on_message(message):
         parser = SubCommandParser()
         try:
             parser.run(sub_cmd)
-        except err.SystemWarn:
+            if len(parser.warn) > 0:
+                text = ""
+                for w in parser.warn:
+                    text += f"\n:issue_icon: `{w}`に、なにも入ってないよ！"
+                await message.channel.send(text + " (デフォルト値で実行中...)")
+        except SystemWarn:
             await message.channel.send("わーん")
-        except Exception as e:
-            print(e)
-        else: # clear parser  
+        except ParserFailed as e:
+            await message.channel.send(f":WA: `<Parser>` `{e.args[0]}`")
+        else: # clear parser
+            # test
+            # Maker.make(parser.eq, parser.var, parser.times, parser.range)
+            # await message.channel.send(file=discord.File('image/jump.gif'))
+            
             try:
                 Maker.make(parser.eq, parser.var, parser.times, parser.range)
+            except MakerFailed as e:
+                await message.channel.send(f":WA: `<Maker>` `{e.args[0]}`")
             except Exception as e:
-                print("maker error")
-                print(e)
-                await message.channel.send("make error")
+                await message.channel.send(f"??? `<Maker>` <@{admin_id}>\ntype {type(e)}\nargs{e.args}")
             else: # complete image
-                print(" :: send gif image :: \n")
+                print("=== Send gif image ===\n")
+                await message.channel.send(":AC:")
                 await message.channel.send(file=discord.File('image/jump.gif'))
         return
 
@@ -92,4 +101,5 @@ async def on_message(message):
 
 
 if __name__ == "__main__":
+    admin_id = "603591881317810207"
     client.run(os.environ['TOKEN'])

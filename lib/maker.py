@@ -30,13 +30,8 @@ class Maker:
         # GIF画像作成のメインループ
         for var["t"] in range(times):
             for i in range(len(eq)):
-                # TODO ここのチェックもパーサーへ    
-                try:
-                    exec("import math; " + eq[i], {}, var)
-                except Exception as e:
-                    raise e
+                exec("import math; " + eq[i], {}, var)
             
-            # TODO パーサーでキーワードのチェック
             if self_range == "default": # 地面より上
                 var["y"] = min([cls.stage.ground - cls.sprite.height, var["y"]])
             elif self_range == "lock": # 画面内かつ地面より上

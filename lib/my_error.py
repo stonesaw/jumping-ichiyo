@@ -2,13 +2,8 @@ class ParserFailed(Exception):
     """パースに失敗したエラー"""
     pass
 
-class WarnEmptyEQ(Exception):
-    pass
-
-class WarnEmptyVAR(Exception):
-    pass
-
 class SystemWarn(Exception):
+    """危険な入力が見つかった時"""
     pass
 
 class MakerFailed(Exception):

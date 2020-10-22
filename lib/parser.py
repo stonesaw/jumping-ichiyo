@@ -1,19 +1,27 @@
 import re
-import lib.my_error as err
+from lib.my_error import ParserFailed, SystemWarn
 from lib.maker import Maker
 
-
-# TODO replace pow function  (L.124)
-# TODO eval eq and check     (L.133)
 
 
 class SubCommandParser:
     def __init__(self):
         #            default value
         self.eq    = ["y = 0.5*g*t*t - v0*t + ground"]
-        self.var   = {}
+        self.var   = {
+            "x": (Maker.stage.width - Maker.sprite.width) / 2,
+            "y": Maker.stage.ground - Maker.sprite.height,
+            "t": 0,
+            "g": 9.8,
+            "v0": 80,
+            "ground": Maker.stage.ground - Maker.sprite.height
+        }
         self.times = 50
         self.range = "default"
+
+        # 警告はメッセージを送って、値はデフォルト値
+        # warn には "eq", "var"などのサブコマンドの文字列を入れる
+        self.warn = []
 
 
     def run(self, sub_cmd: str) -> None:
@@ -33,13 +41,19 @@ class SubCommandParser:
 
 
     def parse_eq(self, sub_cmd: str):
+        if not re.search(r"(^|\s+)eq\[.*?\]", sub_cmd):
+            return
+
         eq_list = re.findall(r"eq\[(.*?)\]", sub_cmd)
         print("    eq", eq_list)
         if eq_list != []:
             if eq_list[0] == "":
-                raise err.WarnEmptyEQ
+                self.warn.append("eq")
+                print("warning << 'eq'")
+                return
             if ";" in eq_list[0]:
-                raise err.SystemWarn
+                print("<<< Find System Warning")
+                raise SystemWarn
 
             pair_list = re.findall(r"([^,]*)(,*\s*)", eq_list[0])
             # ','以外の文字列と','を探す
@@ -49,6 +63,12 @@ class SubCommandParser:
             self.eq = []
             for _eq in pair_list:
                 if _eq[0] != "":
+                    target = re.findall(r"^(\w\d|\w)\s*=\s*(.+)\s*$", _eq[0])
+                    target = target[0][0]
+                    if target != "x" and target != "y": # x か y から始まるか
+                        print("<<< ParserFaild")
+                        raise ParserFailed("eq[] needs to start with 'x' or 'y'")
+                    
                     self.eq.append(_eq[0])
         # replace eq
         # ex) sin() => math.sin()
@@ -57,49 +77,70 @@ class SubCommandParser:
 
 
     def parse_var(self, sub_cmd: str):
+        if not re.search(r"(^|\s+)var\[.*?\]", sub_cmd):
+            return
+
         var_list = re.findall(r"var\[(.*)\]", sub_cmd)
         print("    var", var_list)
         if var_list != []:
             if var_list[0] == "":
-                raise err.WarnEmptyVAR
+                self.warn.append("var")
+                print("warning << 'var'")
+                return
+            if ";" in var_list[0]:
+                print("<<< Find System Warning")
+                raise SystemWarn
 
-            pair_list = re.findall(r"((\w+|\d+)+\s*=\s*(\d*))(,?\s*)", var_list[0])
-            # -> [('y = 100', 'y', '100', ', '), ('x = 100', 'x', '100', '')]
-            # print("pair_list", pair_list)
+            var_list = re.findall(r"([^,]*)(,*\s*)", var_list[0])
+            for _var in var_list:
+                if _var[0] != "":
+                    pair = re.findall(r"(.*?)\s*=\s*(.*)(,?\s*)", _var[0])
+                    pair = pair[0]
+                    try:
+                        self.var[pair[0]] = eval(pair[1])
+                    except Exception:
+                        print("<<< ParserFaild")
+                        raise ParserFailed("var[] wrong argument")
 
-            self.var = {}
-            for _var in pair_list:
-                self.var[_var[1]] = float(_var[2])
         
-        # 変数のデフォルトの設定
-        self.__input_undefined_value(self.var, {
-            "x": (Maker.stage.width - Maker.sprite.width) / 2,
-            "y": Maker.stage.ground - Maker.sprite.height,
-            "t": 0,
-            "g": 9.8,
-            "v0": 80,
-            "ground": Maker.stage.ground - Maker.sprite.height
-        })
-
 
     def parse_times(self, sub_cmd: str):
-        times = re.findall(r"times\[(\d+)\]", sub_cmd)
+        if not re.search(r"(^|\s+)times\[.*?\]", sub_cmd):
+            return
+        
+        times = re.findall(r"times\[(.*?)\]", sub_cmd)
         print("    times", times)
         if times != []:
             if times[0] == "":
-                raise err.WarnEmptyTIMES
-            self.times = int(times[0])
+                self.warn.append("times")
+                print("warning << 'tiems'")
+                return
+            try:
+                self.times = int(times[0])
+            except Exception:
+                print("<<< ParserFaild")
+                raise ParserFailed("times[] wrong argument")
 
 
     def parse_range(self, sub_cmd: str):
+        if not re.search(r"(^|\s+)range\[.*?\]", sub_cmd):
+            return
+        
         self_range = re.findall(r"range\[(.*?)\]", sub_cmd)
         print("    range", self_range)
-        # TODO can use that range?
-        if self_range != []:
-           if self_range[0] == "":
-               raise err.WarnEmptyRANGE
-           self.range = self_range[0]
+        
+        range_list = ["default", "free", "lock", "display"]
 
+        if self_range != []:
+            if self_range[0] == "":
+                self.warn.append("range")
+                print("warning << 'range'")
+                return
+            elif self_range[0] in range_list:
+                self.range = self_range[0]
+            else:
+                print("<<< ParserFaild")
+                raise ParserFailed(f"range[] '{self_range[0]}' is Not Found")
 
 
     def __eq_math_replace(self):
@@ -134,21 +175,10 @@ class SubCommandParser:
 
             print("        out : " + self.eq[i])
 
-            # TODO eval eq and check
-
-            # 'x =' か 'y = ' から始まらないとエラー
-            target = re.findall(r"^(\w\d|\w)\s*=\s*(.+)\s*$", self.eq[i]) # [!] タプルで返ってくる
-            if target[0][0] != "x" and target[0][0] != "y":
-                print(f"[!] Error: {target[0][0]} is Not found")
-                return ["error", f"{target[0][1]} is cannot change"]
-
-            # kata = type(eval(target[0][1], {}, var))
-            # if kata != int and kata != float:
-            #     print(f"[!] Error: please number ({target[0][1]})")
-            #     return ["error", "plz-num"]
+            # TODO evalute eq and check
 
 
-    # list [func_regex, after_str]
+    # list [regex, after_str]
     def __replace_function(self, at: str, list: list):
         for i in range(len(list)):
             regex = list[i][0]
@@ -157,18 +187,10 @@ class SubCommandParser:
                 at = re.sub(regex, after_str, at)
 
 
-    # list [func_regex, after_str]
+    # list [regex, after_str]
     def __replace_const(self, at: str, list: list):
         for i in range(len(list)):
             regex = list[i][0]
             after_str = list[i][1]
             if re.search(re.compile(r"\W+" + regex + r"\W+"), at):
                 at = re.sub(regex, after_str, at)
-
-
-    # dictのkeyが存在しない場合はdictのvalueを代入する
-    def __input_undefined_value(self, at_dict, cf_dict: dict):
-        for key, val in cf_dict.items():
-            if key not in list(at_dict.keys()):
-                at_dict[key] = val
-
