@@ -1,3 +1,8 @@
+# about
+# info
+# help_list[make, eq, eq-math, vat, times, range]
+
+
 about = """
 ```md
   Jumping Ichiyo
@@ -26,25 +31,27 @@ IchiyoがジャンプするGIF画像を作成します
     - info
 
 < tutorial >
-1. jump make
-> send default gif-image
+1. jump make    (send default gif-image)
 2. jump make eq[y = 0.5*g*t*t - v0*t + ground]
 3. jump make eq[y = 0.5*g*t*t - v0*t + ground] var[v0 = 50]
 4. jump make eq[y = -300 * (1-(1-sin(pi*t*0.03)^3)) + ground]
 ```
 """
 
+
+
 info = """
 ```md
   Jumping Ichiyo
 ==================
-<src: https://github.com/stonesaw/jumping-ichiyo>
+<repo: https://github.com/stonesaw/jumping-ichiyo>
 <lang: Python3>
 <lib: discord.py Pillow>
 
 Prod. Sou
 ```
 """
+
 
 
 help_list = {
@@ -59,7 +66,7 @@ makeコマンドは、jump make のキーワードと eq[] 、var[] などのサ
         jump make sub_cmd1[...]
         sub_cmd2[...]
 
-tips: jump makeは常にデフォルトのGIF画像を送ります
+tips: 'jump make'は常にデフォルトのGIF画像を送ります
 ```
 """,
 
@@ -77,9 +84,10 @@ tips: jump makeは常にデフォルトのGIF画像を送ります
 [!] 座標系は左上が(0, 0)で右下に行くほどプラスされます
 default: y = 0.5*g*t*t - v0*t + ground
 
-* see more ...  jump help eq-math
+* sin, cosなどの詳しいヘルプは 'jump help eq-math' を見てね
 ```
 """,
+
 
 "eq-math": """
 ```md
@@ -116,8 +124,8 @@ default: [t = 0, g = 9.8, v0 = 80, x, y, ground]
 GIF画像を作るときのループ回数を設定します
 1 ~ 50の間で指定してください
 
-        range[int]
-    ex) range[20]
+        times[int]
+    ex) times[20]
 
 default: 50
 ```
@@ -134,10 +142,10 @@ Ichiyoを表示する範囲を指定します
 
 rangeコマンドのキーワードは以下の通りです
 
-- above-ground    地面より上、x方向の制限はなし  (デフォルト)
-- free            どこまでも...
-- lock            地面より上、x方向は、画面上のみ
-- display         画面上、穴掘りIchiyo(笑)
+- default    地面より上
+- free       どこまでも...
+- lock       地面より上、x方向は、画面上のみ
+- display    画面上
 ```
 """
 }

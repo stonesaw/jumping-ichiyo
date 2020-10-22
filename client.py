@@ -3,9 +3,11 @@ import re
 from dotenv import load_dotenv
 import discord
 
-from maker import Image, Sprite, Maker
+import lib.my_error as err
+from lib.maker import Maker
+from lib.parser import SubCommandParser
 import message as msg
-import error_message as err_msg
+# import error_message as err_msg
 
 
 load_dotenv(verbose=True)
@@ -13,53 +15,8 @@ client = discord.Client()
 
 
 # TODO
-# pow(**) 小数の時バグる
-# 引数の変換やチェックをクラスにまとめる
+# pow(**) 小数の時バグる  : lib.parser
 
-
-def arg_manage(sub_cmd):
-    args = {}
-    eq_list = re.findall(r"eq\[(.*?)\]", sub_cmd)
-    if eq_list != []:
-        if eq_list[0] == "":
-            args["error"] = "empty-eq"
-            return args
-        if ";" in eq_list[0]:
-            args["error"] = "warn"
-            return args
-        
-        eq = re.findall(r"([^,]*)(,*\s*)", eq_list[0])    
-        args["eq"] = []
-        for e in eq:
-            if e[0] != "":
-                args["eq"].append(e[0])
-    
-    var_list = re.findall(r"var\[(.*)\]", sub_cmd)
-    if var_list != []:
-        if var_list[0] == "":
-            args["error"] = "empty-var"
-            return args
-        
-        pair = re.findall(r"((\w+|\d+)+\s*=\s*(\d*))(,?\s*)", var_list[0])
-        args["var"] = {}
-        for p in pair:
-            args["var"][p[1]] = float(p[2])
-
-    times = re.findall(r"times\[(\d+)\]", sub_cmd)
-    if times != []:
-        if times[0] == "":
-            args["error"] = "empty-times"
-            return args
-        args["times"] = int(times[0])
-
-    self_range = re.findall(r"range\[(.*?)\]", sub_cmd)
-    if self_range != []:
-        if self_range[0] == "":
-            args["error"] = "empty-range"
-            return args
-        args["range"] = self_range[0]
-
-    return args
 
 
 @client.event
@@ -80,41 +37,33 @@ async def on_message(message):
 
     if not content.startswith("jump"):
         return
+
     command = re.sub(r"jump\s*", "", content)
 
-    # make
+
     if command.startswith("make"):
         sub_cmd = re.sub(r"make\s*", "", command)
+        print("sub_cmd:", sub_cmd, "\n")
         
-        print("\ncommand: " + sub_cmd)
-        args = arg_manage(sub_cmd)
-        if "error" in list(args.keys()):
-            err = args["error"]
-            print(f"args-manage error\nerror code : {err}")
-            empty = re.findall(r"^empty-(.*)", err)
-            if err == "warn":
-                await message.channel.send("[!] Error: わーん")
-            elif empty != []:
-                await message.channel.send(f"[!] Error: サブコマンド {empty[0]}[]の値が空です")
-            else:
-                await message.channel.send("予期せぬエラーが発生しました")
-            return
-
-        print("args : \n  ", end="")
-        print(args)
-
-        result = Maker.make(args)
-        if result[0] == "comp":
-            print(" - comp - ")
-            await message.channel.send(file=discord.File('image/jump.gif'))
-        elif result[0] == "error":
-            print("\nerror code: " + result[1])
-            if result[1] in list(err_msg.error.keys()):
-                await message.channel.send("[!] エラー: " + err_msg.error[result[1]])
-            else:
-                await message.channel.send("[!] Error Code " + result[1])
+        # parser
+        parser = SubCommandParser()
+        try:
+            parser.run(sub_cmd)
+        except err.SystemWarn:
+            await message.channel.send("わーん")
+        except Exception as e:
+            print(e)
+        else: # clear parser  
+            try:
+                Maker.make(parser.eq, parser.var, parser.times, parser.range)
+            except Exception as e:
+                print("maker error")
+                print(e)
+                await message.channel.send("make error")
+            else: # complete image
+                print(" :: send gif image :: \n")
+                await message.channel.send(file=discord.File('image/jump.gif'))
         return
-
 
     if command.startswith("last"):
         await message.channel.send(file=discord.File('image/jump.gif'))
@@ -137,6 +86,8 @@ async def on_message(message):
     if command == "":
         await message.channel.send(msg.about)
         return
+
+    await message.channel.send("コマンド : `" + command + "` が見つかりません")
 
 
 
