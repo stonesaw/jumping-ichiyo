@@ -1,6 +1,5 @@
 import os
 import re
-from dotenv import load_dotenv
 import discord
 
 from lib.my_error import MakerFailed, ParserFailed, SystemWarn
@@ -9,7 +8,6 @@ from lib.parser import SubCommandParser
 import message as msg
 
 
-load_dotenv(verbose=True)
 client = discord.Client()
 
 
@@ -102,4 +100,4 @@ async def on_message(message):
 
 if __name__ == "__main__":
     admin_id = "603591881317810207"
-    client.run(os.environ['TOKEN'])
+    client.run(os.environ['DISCORD_BOT_TOKEN'])
