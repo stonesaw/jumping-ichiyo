@@ -55,21 +55,18 @@ class SubCommandParser:
                 print("<<< Find System Warning")
                 raise SystemWarn
 
-            pair_list = re.findall(r"([^,]*)(,*\s*)", eq_list[0])
-            # ','以外の文字列と','を探す
-            # -> [('eq', ', '), ('eq2', '') ... ('', '')]
+            pair_list = re.split(r",\s*", eq_list[0])
             # print("pair_list", pair_list)
             
             self.eq = []
             for _eq in pair_list:
-                if _eq[0] != "":
-                    target = re.findall(r"^(\w\d|\w)\s*=\s*(.+)\s*$", _eq[0])
+                    target = re.findall(r"^(\w\d|\w)\s*=\s*(.+)\s*$", _eq)
                     target = target[0][0]
                     if target != "x" and target != "y": # x か y から始まるか
                         print("<<< ParserFaild")
                         raise ParserFailed("eq[] needs to start with 'x' or 'y'")
                     
-                    self.eq.append(_eq[0])
+                    self.eq.append(_eq)
         # replace eq
         # ex) sin() => math.sin()
         #     PI    => math.pi
@@ -91,16 +88,15 @@ class SubCommandParser:
                 print("<<< Find System Warning")
                 raise SystemWarn
 
-            var_list = re.findall(r"([^,]*)(,*\s*)", var_list[0])
+            var_list = re.split(r",\s*", var_list[0])
             for _var in var_list:
-                if _var[0] != "":
-                    pair = re.findall(r"(.*?)\s*=\s*(.*)(,?\s*)", _var[0])
-                    pair = pair[0]
-                    try:
-                        self.var[pair[0]] = eval(pair[1])
-                    except Exception:
-                        print("<<< ParserFaild")
-                        raise ParserFailed("var[] wrong argument")
+                pair = re.findall(r"(.*?)\s*=\s*(.*)(,?\s*)", _var)
+                pair = pair[0]
+                try:
+                    self.var[pair[0]] = eval(pair[1], {}, self.var)
+                except Exception:
+                    print("<<< ParserFaild")
+                    raise ParserFailed("var[] wrong argument")
 
         
 
@@ -150,7 +146,7 @@ class SubCommandParser:
         
         for i in range(len(self.eq)):
             print("        in  : " + self.eq[i])
-            self.__replace_function(self.eq[i], [
+            self.eq[i] = self.__replace_function(self.eq[i], [
                 [r"deg\(",   "math.deg("],
                 [r"rad\(",   "math.rad("],
                 [r"sin\(",   "math.sin("],
@@ -161,13 +157,13 @@ class SubCommandParser:
                 [r"atan\(",  "math.atan("],
                 [r"atan2\(", "math.atan2("]
             ])
-            self.__replace_const(self.eq[i], [
+            self.eq[i] = self.__replace_const(self.eq[i], [
                 [r"(pi|PI|π)", "math.pi"],
                 ["e", "math.e"]
             ])
 
             # TODO replace pow function
-            self.eq[i].replace("^", "**")
+            self.eq[i] = self.eq[i].replace("^", "**")
 
             log = re.findall(r"log([1-9]\d*)\((.*)\)", self.eq[i])
             if log != []:
@@ -179,18 +175,20 @@ class SubCommandParser:
 
 
     # list [regex, after_str]
-    def __replace_function(self, at: str, list: list):
-        for i in range(len(list)):
-            regex = list[i][0]
-            after_str = list[i][1]
+    def __replace_function(self, at: str, _list: list):
+        for i in range(len(_list)):
+            regex = _list[i][0]
+            after_str = _list[i][1]
             if re.search(re.compile(r"\W+" + regex), at):
                 at = re.sub(regex, after_str, at)
+        return at
 
 
     # list [regex, after_str]
-    def __replace_const(self, at: str, list: list):
-        for i in range(len(list)):
-            regex = list[i][0]
-            after_str = list[i][1]
+    def __replace_const(self, at: str, _list: list) -> str:
+        for i in range(len(_list)):
+            regex = _list[i][0]
+            after_str = _list[i][1]
             if re.search(re.compile(r"\W+" + regex + r"\W+"), at):
                 at = re.sub(regex, after_str, at)
+        return at

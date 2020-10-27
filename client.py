@@ -2,6 +2,9 @@ import os
 import re
 import discord
 
+# test
+# from dotenv import load_dotenv
+
 from lib.my_error import MakerFailed, ParserFailed, SystemWarn
 from lib.maker import Maker
 from lib.parser import SubCommandParser
@@ -9,6 +12,9 @@ import message as msg
 
 
 client = discord.Client()
+
+# test
+# load_dotenv(verbose=True)
 
 
 # TODO
@@ -55,6 +61,8 @@ async def on_message(message):
             await message.channel.send("わーん")
         except ParserFailed as e:
             await message.channel.send(f":WA: `<Parser>` `{e.args[0]}`")
+        except Exception as e:
+            await message.channel.send(f"`<Parser>` <@{admin_id}>\ntype {type(e)}\nargs{e.args}")
         else: # clear parser
             # test
             # Maker.make(parser.eq, parser.var, parser.times, parser.range)
@@ -65,7 +73,7 @@ async def on_message(message):
             except MakerFailed as e:
                 await message.channel.send(f":WA: `<Maker>` `{e.args[0]}`")
             except Exception as e:
-                await message.channel.send(f"??? `<Maker>` <@{admin_id}>\ntype {type(e)}\nargs{e.args}")
+                await message.channel.send(f"`<Maker>` <@{admin_id}>\ntype {type(e)}\nargs{e.args}")
             else: # complete image
                 print("=== Send gif image ===\n")
                 await message.channel.send(":AC:")

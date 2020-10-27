@@ -42,6 +42,8 @@ class Maker:
                 var["y"] = min([cls.stage.height - cls.sprite.height, max([var["y"], 0])])
             elif self_range == "free": # 制限なし
                 pass
+            else:
+                raise NameError("range")
                 
             back = cls.stage.image.copy()
 
