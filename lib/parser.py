@@ -77,7 +77,7 @@ class SubCommandParser:
         if not re.search(r"(^|\s+)var\[.*?\]", sub_cmd):
             return
 
-        var_list = re.findall(r"var\[(.*)\]", sub_cmd)
+        var_list = re.findall(r"var\[(.*?)\]", sub_cmd)
         print("    var", var_list)
         if var_list != []:
             if var_list[0] == "":
@@ -94,9 +94,9 @@ class SubCommandParser:
                 pair = pair[0]
                 try:
                     self.var[pair[0]] = eval(pair[1], {}, self.var)
-                except Exception:
+                except Exception as e:
                     print("<<< ParserFaild")
-                    raise ParserFailed("var[] wrong argument")
+                    raise ParserFailed(f"var[] wrong argument ({e.args})")
 
         
 
@@ -113,9 +113,9 @@ class SubCommandParser:
                 return
             try:
                 self.times = int(times[0])
-            except Exception:
+            except Exception as e:
                 print("<<< ParserFaild")
-                raise ParserFailed("times[] wrong argument")
+                raise ParserFailed(f"times[] wrong argument ({e.args})")
 
 
     def parse_range(self, sub_cmd: str):
